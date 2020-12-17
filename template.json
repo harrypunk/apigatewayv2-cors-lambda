@@ -1,0 +1,150 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS API Gateway with a Lambda Integration",
+  "Resources": {
+    "ApiGatewayRestApi": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "ProtocolType": "HTTP",
+        "Description": "An API Gateway with a Lambda Integration",
+        "Name": "lambda-api"
+      }
+    },
+    "ApiGatewayMethod": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "Description": "Test Integration",
+        "ConnectionType": "INTERNET",
+        "CredentialsArn": {
+          "Fn::GetAtt": ["ApiGatewayIamRole", "Arn"]
+        },
+        "PassthroughBehavior": "WHEN_NO_MATCH",
+        "TimeoutInMillis": 29000,
+        "IntegrationMethod": "GET",
+        "IntegrationType": "AWS_PROXY",
+        "PayloadFormatVersion": "2.0",
+        "IntegrationUri": {
+          "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations"
+        }
+      }
+    },
+    "ApiGatewayStage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "DeploymentId": {
+          "Ref": "ApiGatewayDeployment"
+        },
+        "Description": "Lambda API Stage v0",
+        "ApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "StageName": "v0"
+      }
+    },
+    "ApiGatewayDeployment": {
+      "Type": "AWS::ApiGatewayV2::Deployment",
+      "DependsOn": "ApiGatewayMethod",
+      "Properties": {
+        "Description": "Lambda API Deployment",
+        "ApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayIamRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": ["apigateway.amazonaws.com"]
+              },
+              "Action": ["sts:AssumeRole"]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "LambdaAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "lambda:*",
+                  "Resource": {
+                    "Fn::GetAtt": ["LambdaFunction", "Arn"]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "LambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "ZipFile": "def handler(event, context):\n  response = {\n    'isBase64Encoded': False,\n    'statusCode': 200,\n    'headers': {},\n    'multiValueHeaders': {},\n    'body': 'Hello, World!'\n  }\n  return response\n"
+        },
+        "Description": "Lambda for apigateway",
+        "FunctionName": "Apigatewayv2-proxy-one",
+        "Handler": "index.handler",
+        "MemorySize": 256,
+        "Role": {
+          "Fn::GetAtt": ["LambdaIamRole", "Arn"]
+        },
+        "Runtime": "python3.7",
+        "Timeout": 60
+      }
+    },
+    "LambdaIamRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": ["lambda.amazonaws.com"]
+              },
+              "Action": ["sts:AssumeRole"]
+            }
+          ]
+        },
+        "Path": "/"
+      }
+    },
+    "ApiGatewayResource": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "DependsOn": ["LambdaFunction"],
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "RouteKey": "POST /lambda",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "ApiGatewayMethod"
+              }
+            ]
+          ]
+        }
+      }
+    }
+  }
+}
