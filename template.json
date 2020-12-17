@@ -46,7 +46,7 @@
     },
     "ApiGatewayDeployment": {
       "Type": "AWS::ApiGatewayV2::Deployment",
-      "DependsOn": "ApiGatewayMethod",
+      "DependsOn": ["ApiGatewayMethod", "ApiGatewayRoute"],
       "Properties": {
         "Description": "Lambda API Deployment",
         "ApiId": {
@@ -70,7 +70,6 @@
             }
           ]
         },
-        "Path": "/",
         "Policies": [
           {
             "PolicyName": "LambdaAccess",
@@ -125,14 +124,14 @@
         "Path": "/"
       }
     },
-    "ApiGatewayResource": {
+    "ApiGatewayRoute": {
       "Type": "AWS::ApiGatewayV2::Route",
-      "DependsOn": ["LambdaFunction", "ApiGatewayRestApi", "ApiGatewayMethod"],
+      "DependsOn": ["LambdaFunction"],
       "Properties": {
         "ApiId": {
           "Ref": "ApiGatewayRestApi"
         },
-        "RouteKey": "POST /lambda",
+        "RouteKey": "ANY /lambda",
         "Target": {
           "Fn::Join": [
             "/",
