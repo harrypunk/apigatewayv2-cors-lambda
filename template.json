@@ -127,7 +127,7 @@
     },
     "ApiGatewayResource": {
       "Type": "AWS::ApiGatewayV2::Route",
-      "DependsOn": ["LambdaFunction"],
+      "DependsOn": ["LambdaFunction", "ApiGatewayRestApi", "ApiGatewayMethod"],
       "Properties": {
         "ApiId": {
           "Ref": "ApiGatewayRestApi"
