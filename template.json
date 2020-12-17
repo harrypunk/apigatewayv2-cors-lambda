@@ -23,7 +23,7 @@
         },
         "PassthroughBehavior": "WHEN_NO_MATCH",
         "TimeoutInMillis": 29000,
-        "IntegrationMethod": "GET",
+        "IntegrationMethod": "POST",
         "IntegrationType": "AWS_PROXY",
         "PayloadFormatVersion": "2.0",
         "IntegrationUri": {
